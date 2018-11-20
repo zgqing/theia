@@ -2,8 +2,9 @@
 
 ## v0.3.19
 - [cpp] added new `cpp.clangdExecutable` and `cpp.clangdArgs` to customize language server start command.
-- [monaco] Fix document-saving that was taking too long.
+- [monaco] Fix document-saving that was taking too long
 - [plug-in] added `tasks.onDidStartTask` Plug-in API
+- [electron] open markdown links in the OS default browser
 
 ## v0.3.18
 - [core] added a preference to define how to handle application exit
