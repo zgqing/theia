@@ -49,6 +49,7 @@ export function bindCommonHostedBackend(bind: interfaces.Bind): void {
             // FIXME: handle multiple remote connections
             /*
             client.onDidCloseConnection(() => server.dispose());*/
+            client.onDidCloseConnection(() => console.log('=================================> Connection is dropped'));
             return server;
         })
     ).inSingletonScope();
