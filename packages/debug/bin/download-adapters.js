@@ -15,6 +15,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
+const fs = require('fs');
 const request = require('requestretry');
 const unzip = require('unzip-stream');
 const path = require('path');
@@ -26,9 +27,22 @@ const tar = require('tar');
 const pck = require(path.resolve(process.cwd(), 'package.json'));
 const adapterDir = pck.adapterDir || 'download';
 
+function isDownloaded(dirPath) {
+    try {
+        return !fs.readdirSync(dirPath).length;
+    } catch (e) {
+        return true;
+    }
+}
+
 for (const name in pck.adapters) {
     const targetPath = path.join(process.cwd(), adapterDir, name);
+    if (!isDownloaded(targetPath)) {
+        console.log(name + ': already downloaded');
+        continue;
+    }
     const adapterUrl = pck.adapters[name];
+    console.log(name + ': downloading from ' + adapterUrl);
     const download = request({
         ...pck.requestOptions,
         url: adapterUrl,
@@ -37,7 +51,7 @@ for (const name in pck.adapters) {
         retryStrategy: request.RetryStrategies.HTTPOrNetworkError
     }, (err, response) => {
         if (err) {
-            console.error(`Failed to download "${name}" adapter from "${adapterUrl}":`, err)
+            console.error(name + ': failed to download', err)
             process.exitCode = 1;
         } else {
             console.log(name + ': downloaded successfully' + (response.attempts > 1 ? ` after ${response.attempts}  attempts` : ''));
