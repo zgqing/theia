@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-const request = require('request');
+const request = require('requestretry');
 const unzip = require('unzip-stream');
 const path = require('path');
 const process = require('process');
@@ -25,13 +25,26 @@ const tar = require('tar');
 
 const pck = require(path.resolve(process.cwd(), 'package.json'));
 const adapterDir = pck.adapterDir || 'download';
-let requestOptions = pck.requestOptions || {};
 
 for (const name in pck.adapters) {
     const targetPath = path.join(process.cwd(), adapterDir, name);
-    requestOptions.url = pck.adapters[name];
+    const adapterUrl = pck.adapters[name];
+    const download = request({
+        ...pck.requestOptions,
+        url: adapterUrl,
+        maxAttempts: 5,
+        retryDelay: 2000,
+        retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+    }, (err, response) => {
+        if (err) {
+            console.error(`Failed to download "${name}" adapter from "${adapterUrl}":`, err)
+            process.exitCode = 1;
+        } else {
+            console.log(name + ': downloaded successfully' + (response.attempts > 1 ? ` after ${response.attempts}  attempts` : ''));
+        }
+    });
 
-    if (requestOptions.url.endsWith('gz')) {
+    if (adapterUrl.endsWith('gz')) {
         // Support tar gz
         mkdirp(targetPath);
         const gunzip = zlib.createGunzip({
@@ -41,9 +54,9 @@ for (const name in pck.adapters) {
         const untar = tar.x({
             cwd: targetPath
         });
-        request(requestOptions).pipe(gunzip).pipe(untar);
+        download.pipe(gunzip).pipe(untar);
     } else {
         // Support zip or vsix
-        request(requestOptions).pipe(unzip.Extract({ path: targetPath }));
+        download.pipe(unzip.Extract({ path: targetPath }));
     }
 }
