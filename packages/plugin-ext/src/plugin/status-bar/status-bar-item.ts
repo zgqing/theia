@@ -17,9 +17,12 @@ import * as theia from '@theia/plugin';
 import { ThemeColor, StatusBarAlignment } from '../types-impl';
 import { StatusBarMessageRegistryMain } from '../../api/plugin-api';
 import { VS_COLORS } from './vscolor-const';
+import { UUID } from '@phosphor/coreutils/lib/uuid';
 
 export class StatusBarItemImpl implements theia.StatusBarItem {
-    private _messageId: string;
+
+    private readonly id = StatusBarItemImpl.nextId();
+
     private _alignment: StatusBarAlignment;
     private _priority: number;
 
@@ -94,9 +97,7 @@ export class StatusBarItemImpl implements theia.StatusBarItem {
         if (this._timeoutHandle) {
             clearTimeout(this._timeoutHandle);
         }
-        if (this._messageId) {
-            this._proxy.$dispose(this._messageId);
-        }
+        this._proxy.$removeElement(this.id);
         this._isVisible = false;
     }
 
@@ -104,28 +105,20 @@ export class StatusBarItemImpl implements theia.StatusBarItem {
         if (!this._isVisible) {
             return;
         }
-
-        if (this._messageId) {
-            this._proxy.$dispose(this._messageId);
-        }
-
         if (this._timeoutHandle) {
             clearTimeout(this._timeoutHandle);
         }
-
         // Defer the update so that multiple changes to setters don't cause a redraw each
         this._timeoutHandle = setTimeout(() => {
             this._timeoutHandle = undefined;
 
             // Set to status bar
-            this._proxy.$setMessage(this.text,
+            this._proxy.$setElement(this.id, this.text,
                 this.priority,
                 this.alignment,
                 this.getColor(),
                 this.tooltip,
-                this.command).then((id: string) => {
-                    this._messageId = id;
-                });
+                this.command);
         }, 0);
     }
 
@@ -139,5 +132,9 @@ export class StatusBarItemImpl implements theia.StatusBarItem {
 
     public dispose(): void {
         this.hide();
+    }
+
+    static nextId(): string {
+        return 'plugin-status-bar-item:' + UUID.uuid4();
     }
 }
