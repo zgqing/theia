@@ -108,6 +108,9 @@
       ],
       "@theia/getting-started/lib/*": [
         "packages/getting-started/src/*"
+      ],
+      "@theia/plugin-ext/lib/*": [
+        "packages/plugin-ext/src/*"
       ]
     },
     "plugins": [
